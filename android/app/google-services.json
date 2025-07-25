@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "660215397058",
+    "project_id": "snap-82bb2",
+    "storage_bucket": "snap-82bb2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:660215397058:android:0d90313f8d17f2e659d95b",
+        "android_client_info": {
+          "package_name": "com.example.snap"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-uH0s8XaJguLwaXX4nENDibAOl9fP28o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
