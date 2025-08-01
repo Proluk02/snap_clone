@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:snap/models/story_model.dart'; // Assurez-vous d'importer le modèle Story
+import 'package:snap/models/story_model.dart';
 import 'package:snap/services/auth_service.dart';
 import 'package:snap/services/story_service.dart';
 import 'package:snap/screens/story_viewer_screen.dart';
 import 'package:snap/screens/image_selection_screen.dart';
 import 'package:snap/screens/create_text_story_screen.dart';
+import 'package:snap/screens/users_list_screen.dart'; // Import pour accéder à la liste des utilisateurs
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -18,8 +19,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final _authService = AuthService();
   final _storyService = StoryService();
 
+  /// Affiche un dialogue en bas de l'écran pour choisir le type de story à créer.
   Future<void> _showStoryTypeChoice() async {
-    // ... (Cette méthode reste inchangée, elle est déjà correcte)
     final result = await showModalBottomSheet<dynamic>(
       context: context,
       builder: (BuildContext context) {
@@ -42,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
 
+    // Gère la navigation en fonction du choix de l'utilisateur
     bool? publicationSuccess;
     if (result == 'text') {
       publicationSuccess = await Navigator.push(
@@ -55,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    // Affiche un message de confirmation si une story a bien été publiée
     if (publicationSuccess == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -73,8 +76,23 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text("Stories"),
         actions: [
+          // BOUTON POUR ACCÉDER AU CHAT
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline),
+            tooltip: "Ouvrir le chat",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UsersListScreen(),
+                ),
+              );
+            },
+          ),
+          // BOUTON DE DÉCONNEXION
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: "Se déconnecter",
             onPressed: () => _authService.signOut(),
           ),
         ],
@@ -94,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
+          // Logique de tri pour séparer "My Story" des autres
           List<Story> allStories =
               snapshot.data!.docs.map((doc) => Story.fromSnap(doc)).toList();
           Map<String, List<Story>> groupedStories = {};
@@ -107,16 +126,13 @@ class _HomeScreenState extends State<HomeScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Section pour la story de l'utilisateur connecté
               if (myStories != null)
                 Builder(
                   builder: (context) {
-                    // MODIFICATION ICI : On cherche une story image pour l'aperçu
                     final firstImageStory = myStories.firstWhere(
                       (s) => s.mediaType == 'image',
-                      orElse:
-                          () =>
-                              myStories
-                                  .first, // Fallback à la première story si aucune image n'est trouvée
+                      orElse: () => myStories.first,
                     );
 
                     return ListTile(
@@ -125,7 +141,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         backgroundColor: Colors.green,
                         child: CircleAvatar(
                           radius: 25,
-                          // Si on a une URL, on l'affiche, sinon on affiche une icône
                           backgroundImage:
                               firstImageStory.mediaUrl != null
                                   ? NetworkImage(firstImageStory.mediaUrl!)
@@ -164,6 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
 
+              // Séparateur pour les autres stories
               if (otherStories.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -178,6 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
+              // Liste des stories des autres utilisateurs
               Expanded(
                 child: ListView.builder(
                   itemCount: otherStories.length,
@@ -198,7 +215,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         String displayName =
                             userData['displayName'] ?? 'Utilisateur Anonyme';
 
-                        // MODIFICATION ICI : Même logique pour les autres utilisateurs
                         final firstImageStory = userStories.firstWhere(
                           (s) => s.mediaType == 'image',
                           orElse: () => userStories.first,
