@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:snap/services/chat_service.dart';
+import 'package:snap/utils/app_constants.dart';
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -24,13 +25,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage() async {
     if (_messageController.text.trim().isNotEmpty) {
-      // Stocker le message avant de vider le contrôleur
       String messageToSend = _messageController.text.trim();
-
-      // Vider le champ de texte immédiatement pour une meilleure expérience utilisateur
       _messageController.clear();
-
-      // Envoyer le message en arrière-plan
       await _chatService.sendMessage(widget.receiverId, messageToSend);
     }
   }
@@ -38,96 +34,137 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.receiverName)),
+      backgroundColor: AppConstants.chatBackgroundColor,
+      appBar: AppBar(
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: AppConstants.receiverBubbleColor,
+              child: Text(
+                widget.receiverName[0],
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              widget.receiverName,
+              style: const TextStyle(
+                color: AppConstants.chatPrimaryTextColor, // CORRIGÉ
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppConstants.chatBackgroundColor,
+        elevation: 0,
+        iconTheme: const IconThemeData(
+          color: AppConstants.chatPrimaryTextColor,
+        ), // CORRIGÉ
+      ),
       body: Column(
-        children: [
-          // Section pour afficher les messages
-          Expanded(child: _buildMessagesList()),
-          // Section pour envoyer un message
-          _buildMessageInput(),
-        ],
+        children: [Expanded(child: _buildMessagesList()), _buildMessageInput()],
       ),
     );
   }
 
-  // Widget pour la liste des messages
   Widget _buildMessagesList() {
     return StreamBuilder<QuerySnapshot>(
       stream: _chatService.getMessages(widget.receiverId),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text("Erreur de chargement des messages."));
-        }
+        if (snapshot.hasError) return const Center(child: Text("Erreur..."));
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: SizedBox());
         }
 
-        return ListView(
-          padding: const EdgeInsets.all(8.0),
-          children:
-              snapshot.data!.docs.map((doc) => _buildMessageItem(doc)).toList(),
+        return ListView.builder(
+          reverse: true,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.defaultPadding / 2,
+          ),
+          itemCount: snapshot.data!.docs.length,
+          itemBuilder: (context, index) {
+            return _buildMessageItem(snapshot.data!.docs[index]);
+          },
         );
       },
     );
   }
 
-  // Widget pour un seul message (une bulle de chat)
   Widget _buildMessageItem(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-
-    // Déterminer si le message est de l'utilisateur connecté ou du destinataire
-    bool isSender = data['senderId'] == _currentUser.uid;
-
-    // Aligner la bulle à droite si c'est l'expéditeur, à gauche sinon
-    var alignment = isSender ? Alignment.centerRight : Alignment.centerLeft;
+    final data = doc.data() as Map<String, dynamic>;
+    final isSender = data['senderId'] == _currentUser.uid;
 
     return Container(
-      alignment: alignment,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSender ? Theme.of(context).primaryColor : Colors.grey[300],
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(12),
-            topRight: Radius.circular(12),
-            bottomLeft: isSender ? Radius.circular(12) : Radius.circular(0),
-            bottomRight: isSender ? Radius.circular(0) : Radius.circular(12),
-          ),
+          color:
+              isSender
+                  ? AppConstants.senderBubbleColor
+                  : AppConstants.receiverBubbleColor,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           data['message'],
-          style: TextStyle(color: isSender ? Colors.white : Colors.black),
+          style: const TextStyle(
+            fontSize: 16,
+            color: AppConstants.chatPrimaryTextColor, // CORRIGÉ
+          ),
         ),
       ),
     );
   }
 
-  // Widget pour le champ de saisie et le bouton d'envoi
   Widget _buildMessageInput() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: "Écrire un message...",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding / 2),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppConstants.inputBackgroundColor,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.camera_alt,
+                  color: AppConstants.chatIconColor, // CORRIGÉ
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              onSubmitted: (_) => _sendMessage(),
-            ),
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  style: const TextStyle(
+                    color: AppConstants.chatPrimaryTextColor,
+                  ), // CORRIGÉ
+                  decoration: const InputDecoration(
+                    hintText: "Envoyer un chat...",
+                    hintStyle: TextStyle(
+                      color: AppConstants.chatSecondaryTextColor, // CORRIGÉ
+                    ),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _sendMessage,
+                icon: const Icon(
+                  Icons.send,
+                  color: AppConstants.chatIconColor,
+                ), // CORRIGÉ
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: Icon(Icons.send, color: Theme.of(context).primaryColor),
-            onPressed: _sendMessage,
-          ),
-        ],
+        ),
       ),
     );
   }
