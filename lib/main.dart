@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'presentations/vues/accueil/accueil_page.dart';
-import 'presentations/vues/authentification/login_page.dart';
-import 'presentations/vues/authentification/reset_password_page.dart';
-import 'presentations/vues/authentification/signup_page.dart';
+import 'package:snap/auth/auth_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,21 +10,18 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'SnapClone',
-      theme: ThemeData.dark(useMaterial3: true),
-      initialRoute: '/login',
-      routes: {
-        '/login': (_) => const LoginPage(),
-        '/signup': (_) => const SignupPage(),
-        '/reset': (_) => const ResetPasswordPage(),
-        '/accueil': (_) => const AccueilPage(),
-      },
+      title: 'Snapchat Clone',
+      theme: ThemeData(
+        primarySwatch: Colors.yellow,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      // Maintenant, 'AuthGate' est reconnu car le fichier est importé
+      home: AuthGate(),
     );
   }
 }
